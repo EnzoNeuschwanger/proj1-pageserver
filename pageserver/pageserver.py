@@ -14,6 +14,7 @@
 """
 
 import config    # Configure from .ini files and command line
+import os
 import logging   # Better than print statements
 logging.basicConfig(format='%(levelname)s:%(message)s',
                     level=logging.INFO)
@@ -22,6 +23,8 @@ log = logging.getLogger(__name__)
 
 import socket    # Basic TCP/IP communication on the internet
 import _thread   # Response computation runs concurrently with main program
+
+DOCROOT = "."    # Overridden by configuration
 
 
 def listen(portnum):
@@ -91,8 +94,30 @@ def respond(sock):
 
     parts = request.split()
     if len(parts) > 1 and parts[0] == "GET":
-        transmit(STATUS_OK, sock)
-        transmit(CAT, sock)
+    #Give Error 403
+        if (parts[1].count('~') > 0) or (parts[1].count("//") > 0) or (parts[1].count("..") > 1):
+            log.info("Request forbidden")
+            transmit(STATUS_FORBIDDEN, sock)
+    #File
+        elif (parts[1][-5:] == ".html") or (parts[1][-4:] == ".css"):
+            #Get Path
+            path = os.path.join(DOCROOT, parts[1].lstrip('/')) #Had to lstrip or else it wouldn't work
+            log.info("File requested: ", path)
+            #Check if it's real
+            try:
+                with open(path, 'r', encoding='utf-8') as file:
+                    #Transmit if real
+                    transmit(STATUS_OK, sock)
+                    for line in file:
+                        transmit(line.strip(), sock)
+            #404 if not
+            except OSError as error:
+                log.warning("Couldn't find requested file {}", path)
+                transmit(STATUS_NOT_FOUND, sock)
+    #Any other requests are just cat
+        else:
+            transmit(STATUS_OK, sock)
+            transmit(CAT, sock)
     else:
         log.info("Unhandled request: {}".format(request))
         transmit(STATUS_NOT_IMPLEMENTED, sock)
@@ -136,8 +161,11 @@ def get_options():
 
 
 def main():
+    global DOCROOT
     options = get_options()
     port = options.PORT
+    DOCROOT = options.DOCROOT
+    print(DOCROOT)
     if options.DEBUG:
         log.setLevel(logging.DEBUG)
     sock = listen(port)
