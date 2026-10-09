@@ -84,7 +84,7 @@ STATUS_NOT_IMPLEMENTED = "HTTP/1.0 401 Not Implemented\n\n"
 def respond(sock):
     """
     This server responds only to GET requests (not PUT, POST, or UPDATE).
-    Any valid GET request is answered with either a file, 404, 403 or an ascii graphic of a cat.
+    Any valid GET request is answered with either a .HTML or .CSS file, or 404 or 403 errors.
     """
     sent = 0
     request = sock.recv(1024)  # We accept only short requests
@@ -114,10 +114,9 @@ def respond(sock):
             except OSError as error:
                 log.warning("Couldn't find requested file {}" .format(path))
                 transmit(STATUS_NOT_FOUND, sock)
-    #Any other requests are just cat
+    #Any other requests are just 404
         else:
-            transmit(STATUS_OK, sock)
-            transmit(CAT, sock)
+            transmit(STATUS_NOT_FOUND, sock)
     else:
         log.info("Unhandled request: {}".format(request))
         transmit(STATUS_NOT_IMPLEMENTED, sock)
