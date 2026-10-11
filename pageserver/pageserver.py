@@ -95,7 +95,7 @@ def respond(sock):
     parts = request.split()
     if len(parts) > 1 and parts[0] == "GET":
     #Give Error 403
-        if (parts[1].count('~') > 0) or (parts[1].count("//") > 0) or (parts[1].count("..") > 1):
+        if (parts[1].count('~') > 0) or (parts[1].count("//") > 0) or (parts[1].count("..") > 0):
             log.info("Request forbidden")
             transmit(STATUS_FORBIDDEN, sock)
     #File
